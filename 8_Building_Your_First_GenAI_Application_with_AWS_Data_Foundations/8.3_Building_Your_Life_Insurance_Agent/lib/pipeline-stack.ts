@@ -42,9 +42,9 @@ export class CodePipelineStack extends cdk.Stack {
       throw new Error("Missing connection_arn. Deploy with: cdk deploy --context connection_arn=<your-arn>");
     }
 
-    // Create or import ECR repository using appropriate naming method
-    const repositoryName = props.naming.repositoryName('streamlit');
-    this.ecrRepository = this.createOrImportRepository(repositoryName);
+    // Create or import ECR repository
+    const repo_name = props.naming.repositoryName('streamlit');
+    this.ecrRepository = this.createOrImportRepository(repo_name);
 
     // Import VPC
     const vpc = ec2.Vpc.fromVpcAttributes(this, 'ImportedVpc', {
@@ -70,7 +70,7 @@ export class CodePipelineStack extends cdk.Stack {
         buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
         computeType: codebuild.ComputeType.LARGE,
         environmentVariables: {
-          APP_NAME: { value: props.naming.serviceName('app') },
+          APP_NAME: { value: app_context.name },
           S3_BUCKET: { value: props.naming.bucketName('pipeline') },
           S3_DOCS_PREFIX: { value: s3_context.folders.docs },
           S3_ASSETS_PREFIX: { value: s3_context.folders.assets },
@@ -115,7 +115,6 @@ export class CodePipelineStack extends cdk.Stack {
 
     // Pipeline artifacts
     const artifact_bucket = new s3.Bucket(this, "PipelineArtifacts", {
-      bucketName: props.naming.bucketName('artifacts'),
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true
     });

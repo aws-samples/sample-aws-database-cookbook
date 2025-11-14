@@ -24,4 +24,3 @@ phases:
 artifacts:
   files: 
     - imagedefinitions.json
-  base-directory: 8_Building_Your_First_GenAI_Application_with_AWS_Data_Foundations/8.3_Building_Your_Life_Insurance_Agent/app

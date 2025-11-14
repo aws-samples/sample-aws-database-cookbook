@@ -124,12 +124,10 @@ class PolicyDbClient {
         const query = `
             SELECT 
                 payment_type,
-                card_last_four,
-                status
+                card_last_four
             FROM ${process.env.POLICY_SCHEMA}.${process.env.PAYMENT_METHODS_TABLE}
             WHERE policy_number = $1 
                 AND card_last_four = $2
-                AND status = 'ACTIVE'
                 AND is_default = true
             LIMIT 1
         `;
@@ -143,14 +141,13 @@ class PolicyDbClient {
             const results = await this.executeQuery(query, [policyNumber, lastFour]);
             
             if (results.length === 0) {
-                console.log('No matching active card found');
+                console.log('No matching card found');
                 return null;
             }
 
             return {
                 paymentType: results[0].payment_type,
-                cardLastFour: results[0].card_last_four,
-                status: results[0].status
+                cardLastFour: results[0].card_last_four
             };
         } catch (error) {
             console.error('Error validating stored card:', error);
@@ -302,15 +299,14 @@ class PolicyDbClient {
             queries.push({
                 query: `
                     INSERT INTO ${process.env.POLICY_SCHEMA}.${process.env.PAYMENT_METHODS_TABLE}
-                    (policy_number, payment_type, card_last_four, expiration_date, is_default, status)
-                    VALUES ($1, $2, $3, $4, true, 'ACTIVE')
+                    (policy_number, payment_type, card_last_four, expiration_date, is_default)
+                    VALUES ($1, $2, $3, $4, true)
                     RETURNING 
                         payment_method_id as "paymentMethodId",
                         payment_type as "paymentType",
                         card_last_four as "cardLastFour",
                         expiration_date as "expirationDate",
                         is_default as "isDefault",
-                        status,
                         created_at as "createdAt"
                 `,
                 params: [policyNumber, paymentType, cardLastFour, expirationDate]
