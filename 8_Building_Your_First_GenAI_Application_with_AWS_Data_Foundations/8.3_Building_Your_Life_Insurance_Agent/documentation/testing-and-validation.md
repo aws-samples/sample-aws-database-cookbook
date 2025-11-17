@@ -224,6 +224,9 @@ The following is a complete example showing the agent's core functionality to:
   <em>Figure 12: Complete Interaction Flow Example</em>
 </p>
 
+### (OPTIONAL) Next: Clean Up
+Continue to [Clean Up](clean-up.md).
+
 ---
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.

@@ -24,10 +24,8 @@ import { NamingUtils } from './utils/naming';
 import { aws_bedrock as bedrock } from 'aws-cdk-lib';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 
-interface BedrockAgentConfig {
-  actionGroups: AgentActionGroup[];
-  knowledgeBaseId: string;
-  instruction: string;
+export interface BedrockStackProps extends cdk.StackProps {
+  naming: NamingUtils;
 }
 
 export class BedrockStack extends cdk.Stack {
@@ -61,8 +59,9 @@ export class BedrockStack extends cdk.Stack {
     knowledgeBase: string;
   };
 
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: BedrockStackProps) {
     super(scope, id, props);
+    this.naming = props.naming;
 
     // Get context values
     const app_context = this.node.tryGetContext('app');
@@ -80,8 +79,6 @@ export class BedrockStack extends cdk.Stack {
     console.log('Context Values:');
     console.log('App Context:', JSON.stringify(app_context, null, 2));
     console.log('Database Context:', JSON.stringify(db_context, null, 2));
-
-    this.naming = new NamingUtils(app_context.name);
 
     // Create VPC
     this.vpc = new ec2.Vpc(this, 'VPC', {
@@ -137,7 +134,7 @@ export class BedrockStack extends cdk.Stack {
     // Create Policy Database Cluster
     this.policyCluster = new rds.DatabaseCluster(this, 'PolicyCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
-        version: rds.AuroraPostgresEngineVersion.VER_15_4
+        version: rds.AuroraPostgresEngineVersion.VER_15_8
       }),
       instanceProps: {
         instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
@@ -149,7 +146,7 @@ export class BedrockStack extends cdk.Stack {
       defaultDatabaseName:db_context.policy.cluster.name,
       parameterGroup: new rds.ParameterGroup(this, 'PolicyDBParameterGroup', {
         engine: rds.DatabaseClusterEngine.auroraPostgres({
-          version: rds.AuroraPostgresEngineVersion.VER_15_4
+          version: rds.AuroraPostgresEngineVersion.VER_15_8
         })
       }),
       securityGroups: [dbSecurityGroup],
@@ -177,7 +174,7 @@ export class BedrockStack extends cdk.Stack {
 
     this.kbCluster = new rds.DatabaseCluster(this, 'KnowledgeBaseCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
-        version: rds.AuroraPostgresEngineVersion.VER_15_4
+        version: rds.AuroraPostgresEngineVersion.VER_15_8
       }),
       instanceProps: {
         instanceType: ec2.InstanceType.of(ec2.InstanceClass.R6G, ec2.InstanceSize.LARGE),
@@ -190,7 +187,7 @@ export class BedrockStack extends cdk.Stack {
       defaultDatabaseName: db_context.knowledge.cluster.name,
       parameterGroup: new rds.ParameterGroup(this, 'KBParameterGroup', {
         engine: rds.DatabaseClusterEngine.auroraPostgres({
-          version: rds.AuroraPostgresEngineVersion.VER_15_4
+          version: rds.AuroraPostgresEngineVersion.VER_15_8
         })
       }),
       removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -448,6 +445,7 @@ export class BedrockStack extends cdk.Stack {
       const loadDataFunction = new lambda.Function(this, 'LoadSampleDataFunction', {
           runtime: lambda.Runtime.PYTHON_3_10,
           handler: 'index.handler',
+          architecture: lambda.Architecture.ARM_64,
           code: lambda.Code.fromAsset(path.join(__dirname, '..', 'lambda'), {
               bundling: {
                   image: lambda.Runtime.PYTHON_3_10.bundlingImage,
@@ -463,7 +461,6 @@ export class BedrockStack extends cdk.Stack {
                           // Install dependencies
                           'cd /asset-output',
                           'pip install -r requirements.txt -t .',
-                          'pip install psycopg2-binary -t .',
                           // List contents for verification
                           'echo "Contents of /asset-output:"',
                           'ls -la /asset-output',
@@ -562,6 +559,7 @@ export class BedrockStack extends cdk.Stack {
           functionName: this.naming.functionName('policy-db-init'),
           runtime: lambda.Runtime.PYTHON_3_10,
           handler: 'index.handler',
+          architecture: lambda.Architecture.ARM_64,
           code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/initialize-db'), {
               bundling: {
                   image: lambda.Runtime.PYTHON_3_10.bundlingImage,
@@ -573,7 +571,6 @@ export class BedrockStack extends cdk.Stack {
                           'cp -r /asset-input/sql/* /asset-output/sql/',
                           'cd /asset-output',
                           'pip install -r requirements.txt -t .',
-                          'pip install psycopg2-binary -t .',
                           'ls -la /asset-output',
                           'ls -la /asset-output/sql'
                       ].join(' && ')
@@ -631,6 +628,7 @@ export class BedrockStack extends cdk.Stack {
     const createKBExtension = new lambda.Function(this, 'CreateKBExtension', {
       runtime: lambda.Runtime.PYTHON_3_10,
       handler: 'index.handler',
+      architecture: lambda.Architecture.ARM_64,
       code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/create-kb-extension'), {
         bundling: {
           image: lambda.Runtime.PYTHON_3_10.bundlingImage,
@@ -639,8 +637,7 @@ export class BedrockStack extends cdk.Stack {
               'mkdir -p /asset-output',
               'cp /asset-input/* /asset-output/',
               'cd /asset-output',
-              'pip install -r requirements.txt -t .',
-              'pip install psycopg2-binary -t .'
+              'pip install -r requirements.txt -t .'
             ].join(' && ')
           ]
         }
@@ -688,6 +685,7 @@ export class BedrockStack extends cdk.Stack {
           functionName: this.naming.functionName('kb-db-init'),
           runtime: lambda.Runtime.PYTHON_3_10,
           handler: 'index.handler',
+          architecture: lambda.Architecture.ARM_64,
           code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/initialize-db'), {
               bundling: {
                   image: lambda.Runtime.PYTHON_3_10.bundlingImage,
@@ -699,7 +697,6 @@ export class BedrockStack extends cdk.Stack {
                           'cp -r /asset-input/sql/* /asset-output/sql/',
                           'cd /asset-output',
                           'pip install -r requirements.txt -t .',
-                          'pip install psycopg2-binary -t .',
                           'ls -la /asset-output',
                           'ls -la /asset-output/sql'
                       ].join(' && ')
@@ -798,7 +795,7 @@ export class BedrockStack extends cdk.Stack {
       ADDRESSES_TABLE: db_context.tables.addresses,
       BENEFICIARIES_TABLE: db_context.tables.beneficiaries,
       PAYMENT_HISTORY_TABLE: db_context.tables.payment_history,
-      PAYMENT_METHODS_TABLE: db_context.tables.payment_methods 
+      PAYMENT_METHODS_TABLE: db_context.tables.payment_methods
     };
   }
 
@@ -989,6 +986,7 @@ export class BedrockStack extends cdk.Stack {
       const associateKBFunction = new lambda.Function(this, 'AssociateKBFunction', {
           runtime: lambda.Runtime.PYTHON_3_10,
           handler: 'index.handler',
+          architecture: lambda.Architecture.ARM_64,
           code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/associate-kb'), {
               bundling: {
                   image: lambda.Runtime.PYTHON_3_10.bundlingImage,

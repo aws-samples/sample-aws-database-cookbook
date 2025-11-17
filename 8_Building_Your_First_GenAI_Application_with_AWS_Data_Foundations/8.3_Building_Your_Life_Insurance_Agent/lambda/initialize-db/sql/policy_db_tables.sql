@@ -51,7 +51,7 @@ ALTER TABLE ${ADDRESSES_TABLE}
 DROP CONSTRAINT IF EXISTS unique_current_address;
 
 -- Add a new constraint that only enforces one current address per type
-CREATE UNIQUE INDEX current_address_idx 
+CREATE UNIQUE INDEX IF NOT EXISTS current_address_idx 
 ON ${ADDRESSES_TABLE} (policy_number, address_type) 
 WHERE is_current = true;
 
@@ -90,7 +90,7 @@ ALTER TABLE ${PAYMENT_METHODS_TABLE}
 DROP CONSTRAINT IF EXISTS unique_default_payment;
 
 -- Add unique constraint for default payment methods
-CREATE UNIQUE INDEX unique_default_payment
+CREATE UNIQUE INDEX IF NOT EXISTS unique_default_payment
 ON ${PAYMENT_METHODS_TABLE} (policy_number)
 WHERE is_default = true;
 

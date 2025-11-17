@@ -31,13 +31,13 @@
 
 ```bash
 git clone <repository-url>
-cd <life-insurance-agent>
+cd 8.3_Building_Your_Life_Insurance_Agent
 npm install
 ```
 
 > 💡 **Note**: If you are running from the Amazon SageMaker Notebook following [1.4 Setting up Your Cookbook Environment](../../../1_Getting_Started_with_AWS/1.4_Setting_up_Your_Cookbook_Environment/README.MD), the repository has been cloned when you lanuched the [AWS CloudFormation template](../../../1_Getting_Started_with_AWS/cfn/sagemaker-notebook-template.yaml).
 
-From the Amazon SageMaker Notebook lancuned by [1.4 Setting up Your Cookbook Environment](../../../1_Getting_Started_with_AWS/1.4_Setting_up_Your_Cookbook_Environment/README.MD):
+From the Amazon SageMaker Notebook launched by [1.4 Setting up Your Cookbook Environment](../../../1_Getting_Started_with_AWS/1.4_Setting_up_Your_Cookbook_Environment/README.MD):
 
   - Go to [8.3_Building_Your_Life_Insurance_Agent](../../../8_Building_Your_First_GenAI_Application_with_AWS_Data_Foundations/README.md)
   - Click **[+]** button in the top-left corner of the JupyterLab console
@@ -59,22 +59,48 @@ Install the required packages.
 npm install
 ```
 
-### 3. Configure GitHub Connection
+### 3. Configure GitHub Connection (CodeConnections)
 
-  - Navigate to the [AWS CodePipeline console](https://console.aws.amazon.com/codesuite/codepipeline/start)
-  - In the left sidebar, click on **Settings** and then **Connections**
-  - Click **Create connection**
-  - Choose **GitHub** as the provider
-  - Provice a name to the **Connection name**
-  - Click **Connect to GitHub**
-  - Click **Authorize AWS Connector for Github**
-    - If prompted, sign in to your GitHub account
-  - For **App installation**, choose **Install a new app**
-  - Select the repository you want to connect
-  - Review and click **Install & Authorize**
-  - Click **Connect**
-  - Note the ARN of the new connection
-    - Need to provide the ARN in the next step 
+The solution uses AWS CodeConnections (formerly CodeStar Connections) to integrate with GitHub for continuous deployment.
+
+**Option A: Using AWS Console**
+
+1. Navigate to the [AWS CodePipeline console](https://console.aws.amazon.com/codesuite/codepipeline/start)
+2. In the left sidebar, click on **Settings** and then **Connections**
+3. Click **Create connection**
+4. Choose **GitHub** as the provider
+5. Provide a name for the **Connection name** (e.g., `lifeins-github-connection`)
+6. Click **Connect to GitHub**
+7. Click **Authorize AWS Connector for GitHub**
+   - If prompted, sign in to your GitHub account
+8. For **App installation**, choose **Install a new app**
+9. Select the repository you want to connect
+10. Review and click **Install & Authorize**
+11. Click **Connect**
+12. **Important**: Copy the connection ARN - you'll need it in the next step
+    - Format: `arn:aws:codestar-connections:REGION:ACCOUNT-ID:connection/CONNECTION-ID`
+
+**Option B: Using AWS CLI**
+
+```bash
+# Create the connection
+aws codestar-connections create-connection \
+  --provider-type GitHub \
+  --connection-name lifeins-github-connection \
+  --region us-east-1
+
+# Note the ConnectionArn from the output
+```
+
+After creating the connection via CLI, you must complete the authorization in the console:
+
+1. Go to: https://console.aws.amazon.com/codesuite/settings/connections?region=us-east-1
+2. Find your connection with status "Pending"
+3. Click **Update pending connection**
+4. Click **Authorize** and complete the GitHub authorization flow
+5. Verify the connection status changes to "Available"
+
+> ⚠️ **Important**: The connection must be in "Available" status before deploying the CDK stacks. A "Pending" connection will cause the CodePipeline deployment to fail. 
 
 ### 4. Configure Context
 
@@ -376,10 +402,12 @@ The solution uses `cdk.context.json` to configure deployment parameters. Each se
   "connection_arn": "arn:aws:codeconnections:us-east-1:<YOUR-ACCOUNT-ID>:connection/<YOUR-CONNECTION-ID>",
 
   // Regional availability configuration
+  // IMPORTANT: Must match vpc.maxAzs (default: 3). If deploying to a region with more AZs,
+  // list only the first 3 AZs to match the VPC subnet configuration.
   "availability-zones:account=<YOUR-ACCOUNT-ID>:region=us-east-1": [
     "us-east-1a",                // Primary AZ
     "us-east-1b",                // Secondary AZ
-    "us-east-1c"                 // Tertiary AZ
+    "us-east-1c"                 // Tertiary AZ (must match vpc.maxAzs)
   ]
 }
 ```

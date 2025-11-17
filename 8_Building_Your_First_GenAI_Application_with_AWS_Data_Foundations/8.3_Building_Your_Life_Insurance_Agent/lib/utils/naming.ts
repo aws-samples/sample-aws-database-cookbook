@@ -1,20 +1,30 @@
 // lib/utils/naming.ts
 
 export class NamingUtils {
-  private readonly prefix: string;
+  private readonly dbPrefix: string;  // For database resources (with underscores)
+  private readonly resourcePrefix: string;  // For other AWS resources (with hyphens)
   private readonly maxLength: number = 63;
 
   constructor(stackPrefix: string) {
-    // Get app name from context if available, otherwise use provided prefix
-    this.prefix = stackPrefix.toLowerCase();
+    this.dbPrefix = stackPrefix.replace(/-/g, '_'); // Convert any hyphens to underscores for database names
+    this.resourcePrefix = stackPrefix; // Keep hyphens for resource names (already has hyphens from APP_NAME)
   }
 
   private sanitize(name: string): string {
     return name.toLowerCase()
       .replace(/([A-Z])/g, '-$1')
       .replace(/[^a-z0-9-]/g, '-')
+      .replace(/_/g, '-')
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
+  }
+
+  private sanitizeDbName(name: string): string {
+    return name.toLowerCase()
+      .replace(/[^a-z0-9_]/g, '_')
+      .replace(/-/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
   }
 
   private truncate(str: string, maxLength: number): string {
@@ -23,7 +33,7 @@ export class NamingUtils {
   }
 
   private generateResourceName(resourceType: string, suffix?: string): string {
-    const parts = [this.prefix, resourceType];
+    const parts = [this.resourcePrefix, resourceType];
     if (suffix) parts.push(suffix);
     
     const name = parts.join('-');
@@ -31,6 +41,10 @@ export class NamingUtils {
   }
 
   // Standard AWS resource naming methods
+  public stackName(name: string): string {
+    return this.generateResourceName('stack', name);
+  }
+
   public functionName(name: string): string {
     return this.generateResourceName('function', name);
   }
@@ -45,8 +59,23 @@ export class NamingUtils {
     return this.generateResourceName(`${type}-${account}-${region}`);
   }
 
+  public repositoryName(name: string): string {
+    return this.generateResourceName('repository', name);
+  }
+
+  // Database related naming methods
   public tableName(name: string): string {
-    return this.generateResourceName('table', name);
+    const parts = [this.sanitizeDbName(this.dbPrefix), this.sanitizeDbName(name)];
+    return this.truncate(parts.join('_'), this.maxLength);
+  }
+
+  public databaseName(name: string): string {
+    const parts = [this.sanitizeDbName(this.dbPrefix), this.sanitizeDbName(name)];
+    return this.truncate(parts.join('_'), this.maxLength);
+  }
+
+  public clusterIdentifier(name: string): string {
+    return this.generateResourceName('cluster', name);
   }
 
   public roleName(name: string): string {
@@ -104,15 +133,6 @@ export class NamingUtils {
 
   public projectName(name: string): string {
     return this.generateResourceName('project', name);
-  }
-
-  // Database related naming methods
-  public databaseName(name: string): string {
-    return this.generateResourceName('db', name).replace(/-/g, '_');
-  }
-
-  public clusterIdentifier(name: string): string {
-    return this.generateResourceName('cluster', name);
   }
 
   // Monitoring related naming methods
