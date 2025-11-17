@@ -36,8 +36,8 @@ const pipelineStack = new CodePipelineStack(app, 'PipelineStack', {
   vpcId: bedrockStack.getVpc().vpcId,
   publicSubnetIds: bedrockStack.getPublicSubnetIds(),
   privateSubnetIds: bedrockStack.getPrivateSubnetIds(),
-  ecsClusterName: naming.clusterName('ecs'),
-  ecsServiceName: naming.serviceName('ecs'),
+  ecsClusterName: `${appContext.name}-cluster`,
+  ecsServiceName: `${appContext.name}-service`,
   naming
 } as CodePipelineStackProps);
 

@@ -155,6 +155,31 @@ class PolicyDbClient {
         }
     }
 
+    async storePaymentMethod(policyNumber, paymentMethodDetails) {
+        const { paymentType, cardLastFour, expirationDate, isDefault } = paymentMethodDetails;
+        
+        const query = `
+            INSERT INTO ${process.env.POLICY_SCHEMA}.${process.env.PAYMENT_METHODS_TABLE}
+            (policy_number, payment_type, card_last_four, expiration_date, is_default)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING 
+                payment_method_id as "paymentMethodId",
+                payment_type as "paymentType",
+                card_last_four as "cardLastFour",
+                expiration_date as "expirationDate",
+                is_default as "isDefault"
+        `;
+        
+        try {
+            console.log('Storing new payment method:', { policyNumber, paymentType, cardLastFour: `****${cardLastFour}` });
+            const results = await this.executeQuery(query, [policyNumber, paymentType, cardLastFour, expirationDate, isDefault]);
+            return results[0];
+        } catch (error) {
+            console.error('Error storing payment method:', error);
+            throw error;
+        }
+    }
+
     // Get Policy Details methods
     async getPolicyDetails(policyNumber) {
         const query = `
@@ -290,8 +315,7 @@ class PolicyDbClient {
                         payment_type as "paymentType",
                         card_last_four as "cardLastFour",
                         expiration_date as "expirationDate",
-                        is_default as "isDefault",
-                        status
+                        is_default as "isDefault"
                 `,
                 params: [policyNumber]
             });

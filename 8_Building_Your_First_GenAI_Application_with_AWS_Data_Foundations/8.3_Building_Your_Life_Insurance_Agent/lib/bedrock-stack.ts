@@ -134,7 +134,7 @@ export class BedrockStack extends cdk.Stack {
     // Create Policy Database Cluster
     this.policyCluster = new rds.DatabaseCluster(this, 'PolicyCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
-        version: rds.AuroraPostgresEngineVersion.VER_15_4
+        version: rds.AuroraPostgresEngineVersion.VER_15_8
       }),
       instanceProps: {
         instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
@@ -146,7 +146,7 @@ export class BedrockStack extends cdk.Stack {
       defaultDatabaseName:db_context.policy.cluster.name,
       parameterGroup: new rds.ParameterGroup(this, 'PolicyDBParameterGroup', {
         engine: rds.DatabaseClusterEngine.auroraPostgres({
-          version: rds.AuroraPostgresEngineVersion.VER_15_4
+          version: rds.AuroraPostgresEngineVersion.VER_15_8
         })
       }),
       securityGroups: [dbSecurityGroup],
@@ -174,7 +174,7 @@ export class BedrockStack extends cdk.Stack {
 
     this.kbCluster = new rds.DatabaseCluster(this, 'KnowledgeBaseCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
-        version: rds.AuroraPostgresEngineVersion.VER_15_4
+        version: rds.AuroraPostgresEngineVersion.VER_15_8
       }),
       instanceProps: {
         instanceType: ec2.InstanceType.of(ec2.InstanceClass.R6G, ec2.InstanceSize.LARGE),
@@ -187,7 +187,7 @@ export class BedrockStack extends cdk.Stack {
       defaultDatabaseName: db_context.knowledge.cluster.name,
       parameterGroup: new rds.ParameterGroup(this, 'KBParameterGroup', {
         engine: rds.DatabaseClusterEngine.auroraPostgres({
-          version: rds.AuroraPostgresEngineVersion.VER_15_4
+          version: rds.AuroraPostgresEngineVersion.VER_15_8
         })
       }),
       removalPolicy: cdk.RemovalPolicy.DESTROY,
