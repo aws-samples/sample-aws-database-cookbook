@@ -67,10 +67,21 @@ exports.handler = async (event) => {
 
         const dbClient = new PolicyDbClient();
 
-        // Add validation against stored card
-        const storedCard = await dbClient.getStoredCard(payment.policyNumber, payment.cardNumber.slice(-4));
+        // Check if card exists, if not store it as new payment method
+        const lastFour = payment.cardNumber.slice(-4);
+        let storedCard = await dbClient.getStoredCard(payment.policyNumber, lastFour);
+        
         if (!storedCard) {
-            return formatErrorResponse(400, 'Invalid payment method', event);
+            console.log('Card not found, storing as new payment method');
+            // Store new payment method
+            const newPaymentMethod = {
+                paymentType: 'CREDIT_CARD',
+                cardLastFour: lastFour,
+                expirationDate: payment.expirationDate,
+                isDefault: false
+            };
+            await dbClient.storePaymentMethod(payment.policyNumber, newPaymentMethod);
+            storedCard = { payment_type: 'CREDIT_CARD', card_last_four: lastFour };
         }
 
         let convertedExpirationDate;

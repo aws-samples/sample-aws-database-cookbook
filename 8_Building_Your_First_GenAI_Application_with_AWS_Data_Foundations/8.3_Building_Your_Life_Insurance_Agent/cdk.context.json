@@ -1,9 +1,37 @@
 {
   "app": {
-    "name": "lifeins1",
-    "title": "Product Search Assistant",
-    "icon": "🔍",
-    "chatPrompt": "How can I help?"
+    "name": "lifeins-5460",
+    "title": "Life Insurance Agent",
+    "icon": "🏥",
+    "chatPrompt": "How can I help with your life insurance needs?"
+  },
+  "resources": {
+    "naming": {
+      "bucket": "{app.name}-{purpose}-{account}-{region}",
+      "function": "{app.name}-{purpose}",
+      "layer": "{app.name}-{purpose}",
+      "table": "{app.name}-{purpose}",
+      "database": "{app.name}-{purpose}",
+      "cluster": "{app.name}-{purpose}",
+      "role": "{app.name}-{purpose}",
+      "agent": "{app.name}-{purpose}",
+      "knowledgeBase": "{app.name}-{purpose}",
+      "guardrail": "{app.name}-{purpose}",
+      "userPool": "{app.name}-{purpose}",
+      "userPoolClient": "{app.name}-{purpose}",
+      "service": "{app.name}-{purpose}",
+      "taskDefinition": "{app.name}-{purpose}",
+      "securityGroup": "{app.name}-{purpose}",
+      "secret": "{app.name}-{purpose}",
+      "pipeline": "{app.name}-{purpose}",
+      "project": "{app.name}-{purpose}",
+      "logGroup": "{app.name}-{purpose}",
+      "alarm": "{app.name}-{purpose}",
+      "vpc": "{app.name}-vpc",
+      "subnet": "{app.name}-{purpose}",
+      "loadBalancer": "{app.name}-{purpose}",
+      "targetGroup": "{app.name}-{purpose}"
+    }
   },
   "bedrock": {
     "agent": {
@@ -19,12 +47,8 @@
     }
   },
   "cognito": {
-    "userPoolName": "lifeins1-user-pool",
-    "secrets_manager_id": "lifeins1-cognito-params",
+    "secrets_manager_id": "{app.name}-cognito-params",
     "tempPassword": "ChangeMe123!"
-  },
-  "stack": {
-    "prefix": "{app.name}"
   },
   "vpc": {
     "cidr": "10.0.0.0/16",
@@ -48,22 +72,20 @@
   "databases": {
     "policy": {
       "cluster": {
-        "identifier": "lifeins1-policy",
         "name": "policydb1"
       },
       "schema": "policyschema",
       "tables": {
-        "policies": "lifeins1_policies",
-        "premiums": "lifeins1_premiums",
-        "addresses": "lifeins1_addresses",
-        "beneficiaries": "lifeins1_beneficiaries",
-        "payment_history": "lifeins1_payment_history",
-        "payment_methods": "lifeins1_payment_methods"
+        "policies": "policies",
+        "premiums": "premiums",
+        "addresses": "addresses",
+        "beneficiaries": "beneficiaries",
+        "payment_history": "payment_history",
+        "payment_methods": "payment_methods"
       }
     },
     "knowledge": {
       "cluster": {
-        "identifier": "lifeins1-kb",
         "name": "kbdb1"
       },
       "schema": "bedrockintegration",
@@ -75,12 +97,7 @@
       }
     }
   },
-  "dynamodb": {
-    "feedback_table_name": "lifeins1-feedback",
-    "chat_history_table_name": "lifeins1-chat-history"
-  },
   "s3": {
-    "bucketName": "lifeins1-{account}-{region}",
     "folders": {
       "agent": "agent",
       "docs": "documents",
@@ -96,20 +113,22 @@
   },
   "cloudfront": {
     "custom_header_name": "X-Custom-Header",
-    "custom_header_value": "your-secret-value-here"
-  },
-  "ecr": {
-    "repository_name": "lifeins1-streamlit"
+    "custom_header_value": "e4e1f4e5f9aca43d5dd15309ccfcb49e"
   },
   "github": {
-    "owner": "<YOUR-GITHUB-OWNER>",
-    "repo": "<YOUR-GITHUB-REPO>",
-    "branch": "<YOUR-GITHUB-BRANCH>"
+    "owner": "kyleblocksom",
+    "repo": "sample-aws-database-cookbook",
+    "branch": "main"
   },
-  "connection_arn": "arn:aws:codeconnections:<YOUR-REGION>:<YOUR-ACCOUNT-ID>:connection/<YOUR-CONNECTION-ID>",
-  "availability-zones:account=<YOUR-ACCOUNT-ID>:region=<YOUR-REGION>": [
-    "<YOUR-REGION>a",
-    "<YOUR-REGION>b",
-    "<YOUR-REGION>c"
+  "connection_arn": "arn:aws:codeconnections:us-east-1:239380694500:connection/843f16bd-5bc1-4870-b606-2d69e55e6abf",
+  "availability-zones:account=239380694500:region=us-east-1": [
+    "us-east-1a",
+    "us-east-1b",
+    "us-east-1c"
+  ],
+  "availability-zones:account=239380694500:region=us-west-2": [
+    "us-west-2a",
+    "us-west-2b",
+    "us-west-2c"
   ]
 }

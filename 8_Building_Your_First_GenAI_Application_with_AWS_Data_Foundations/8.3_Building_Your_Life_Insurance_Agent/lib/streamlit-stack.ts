@@ -21,7 +21,7 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { NamingUtils } from './utils/naming';
 
-interface StreamlitAppStackProps extends cdk.StackProps {
+export interface StreamlitAppStackProps extends cdk.StackProps {
   // Bedrock resources
   bedrockAgentId: string;
   bedrockKnowledgeBaseId: string;
@@ -42,6 +42,9 @@ interface StreamlitAppStackProps extends cdk.StackProps {
   
   // ECR repository
   ecrRepository: ecr.IRepository;
+
+  // Naming utility
+  naming: NamingUtils;
 }
 
 export class StreamlitAppStack extends cdk.Stack {
@@ -67,8 +70,6 @@ export class StreamlitAppStack extends cdk.Stack {
     // Use formatted context values
     const prefix = app_context.name;
     const secrets_manager_id = cognito_context.secrets_manager_id.replace("{app.name}", prefix);
-    const feedback_table_name = dynamodb_context.feedback_table_name.replace("{app.name}", prefix);
-    const chat_history_table_name = dynamodb_context.chat_history_table_name.replace("{app.name}", prefix);
 
     // Create Cognito user pool first
     const user_pool = new cognito.UserPool(this, `${prefix}UserPool`, {
@@ -153,14 +154,14 @@ export class StreamlitAppStack extends cdk.Stack {
 
     // Create DynamoDB tables
     const feedback_table = new dynamodb.Table(this, `${prefix}FeedbackTable`, {
-      tableName: this.naming.tableName('feedback'),
+      tableName: props.naming.tableName('feedback'), 
       partitionKey: { name: "FeedbackId", type: dynamodb.AttributeType.STRING },
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST
     });
 
     const chat_history_table = new dynamodb.Table(this, `${prefix}ChatHistoryTable`, {
-      tableName: this.naming.tableName('chat-history'),
+      tableName: props.naming.tableName('chat-history'),
       partitionKey: { name: "user_id", type: dynamodb.AttributeType.STRING },
       sortKey: { name: "session_id", type: dynamodb.AttributeType.STRING },
       timeToLiveAttribute: "ttl",
@@ -315,6 +316,61 @@ export class StreamlitAppStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY
     });
 
+    // Lambda to wait for ECR image with retry logic
+    const waitForImageFunction = new lambda.Function(this, `${prefix}WaitForImageFunction`, {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      handler: 'index.handler',
+      code: lambda.Code.fromInline(`
+import boto3
+import time
+import cfnresponse
+
+ecr = boto3.client('ecr')
+
+def handler(event, context):
+    if event['RequestType'] == 'Delete':
+        cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+        return
+    
+    repo_name = event['ResourceProperties']['RepositoryName']
+    max_attempts = 30  # 15 minutes with 30 second intervals
+    
+    for attempt in range(max_attempts):
+        try:
+            response = ecr.describe_images(
+                repositoryName=repo_name,
+                imageIds=[{'imageTag': 'latest'}]
+            )
+            if response['imageDetails']:
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                return
+        except ecr.exceptions.ImageNotFoundException:
+            pass
+        
+        if attempt < max_attempts - 1:
+            time.sleep(30)
+    
+    cfnresponse.send(event, context, cfnresponse.FAILED, {}, reason='Image not found after 15 minutes')
+      `),
+      timeout: cdk.Duration.minutes(15)
+    });
+
+    waitForImageFunction.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['ecr:DescribeImages'],
+      resources: [props.ecrRepository.repositoryArn]
+    }));
+
+    const waitForImageProvider = new cr.Provider(this, `${prefix}WaitForImageProvider`, {
+      onEventHandler: waitForImageFunction
+    });
+
+    const waitForImage = new cdk.CustomResource(this, `${prefix}WaitForImage`, {
+      serviceToken: waitForImageProvider.serviceToken,
+      properties: {
+        RepositoryName: props.ecrRepository.repositoryName
+      }
+    });
+
     // Use the ECR repository in the task definition
     const container = fargate_task_definition.addContainer(`${prefix}WebContainer`, {
       image: ecs.ContainerImage.fromEcrRepository(props.ecrRepository, "latest"),
@@ -346,6 +402,9 @@ export class StreamlitAppStack extends cdk.Stack {
         }
       ]
     });
+
+    // Ensure service waits for image to exist
+    service.node.addDependency(waitForImage);
 
     // Add necessary permissions
     const task_role = fargate_task_definition.taskRole;

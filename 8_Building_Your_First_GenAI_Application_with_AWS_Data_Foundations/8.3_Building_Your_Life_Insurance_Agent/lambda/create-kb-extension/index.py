@@ -46,25 +46,29 @@ def handler(event, context):
     try:
         # Get connection details from environment variables
         secret = get_secret(os.environ['SECRET_ARN'])
+        db_name = os.environ['DB_NAME']
         
         # Connect to default database first
-        
-        # Create knowledge_db database if it doesn't exist
         engine = create_engine(f"postgresql://{secret['username']}:{secret['password']}@{os.environ['CLUSTER_ENDPOINT']}/postgres")
         connection = engine.connect()
         
-        stmt = text("SELECT 1 FROM pg_database WHERE datname = :db_name")
-        result = connection.execute(stmt, db_name=os.environ['DB_NAME'])
+        # Check if database exists
+        result = connection.execute(
+            text("SELECT 1 FROM pg_database WHERE datname = :name"),
+            {"name": db_name}
+        )
+        
         if not result.fetchone():
-            print(f"Creating {os.environ['DB_NAME']} database...")
+            print(f"Creating {db_name} database...")
             connection.execute(text("COMMIT"))
-            create_db = DDL("CREATE DATABASE " + os.environ['DB_NAME'])
+            # Need to use DDL for CREATE DATABASE
+            create_db = DDL(f"CREATE DATABASE {db_name}")
             connection.execute(create_db)
         
         connection.close()
         
         # Connect to knowledge_db database
-        engine = create_engine(f"postgresql://{secret['username']}:{secret['password']}@{os.environ['CLUSTER_ENDPOINT']}/{os.environ['DB_NAME']}")
+        engine = create_engine(f"postgresql://{secret['username']}:{secret['password']}@{os.environ['CLUSTER_ENDPOINT']}/{db_name}")
         connection = engine.connect()
         connection.execute(text("COMMIT"))
         

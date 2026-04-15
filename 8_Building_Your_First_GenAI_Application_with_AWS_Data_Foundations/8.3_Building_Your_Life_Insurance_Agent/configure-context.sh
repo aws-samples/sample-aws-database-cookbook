@@ -66,6 +66,34 @@ cat > cdk.context.json << EOF
     "icon": "🏥",
     "chatPrompt": "How can I help with your life insurance needs?"
   },
+  "resources": {
+    "naming": {
+      "bucket": "{app.name}-{purpose}-{account}-{region}",
+      "function": "{app.name}-{purpose}",
+      "layer": "{app.name}-{purpose}",
+      "table": "{app.name}-{purpose}",
+      "database": "{app.name}-{purpose}",
+      "cluster": "{app.name}-{purpose}",
+      "role": "{app.name}-{purpose}",
+      "agent": "{app.name}-{purpose}",
+      "knowledgeBase": "{app.name}-{purpose}",
+      "guardrail": "{app.name}-{purpose}",
+      "userPool": "{app.name}-{purpose}",
+      "userPoolClient": "{app.name}-{purpose}",
+      "service": "{app.name}-{purpose}",
+      "taskDefinition": "{app.name}-{purpose}",
+      "securityGroup": "{app.name}-{purpose}",
+      "secret": "{app.name}-{purpose}",
+      "pipeline": "{app.name}-{purpose}",
+      "project": "{app.name}-{purpose}",
+      "logGroup": "{app.name}-{purpose}",
+      "alarm": "{app.name}-{purpose}",
+      "vpc": "{app.name}-vpc",
+      "subnet": "{app.name}-{purpose}",
+      "loadBalancer": "{app.name}-{purpose}",
+      "targetGroup": "{app.name}-{purpose}"
+    }
+  },
   "bedrock": {
     "agent": {
       "foundationModel": "anthropic.claude-3-haiku-20240307-v1:0",
@@ -80,12 +108,8 @@ cat > cdk.context.json << EOF
     }
   },
   "cognito": {
-    "userPoolName": "$APP_NAME-user-pool",
-    "secrets_manager_id": "$APP_NAME-cognito-params",
-    "tempPassword": "$(openssl rand -hex 16)"
-  },
-  "stack": {
-    "prefix": "{app.name}"
+    "secrets_manager_id": "{app.name}-cognito-params",
+    "tempPassword": "ChangeMe123!"
   },
   "vpc": {
     "cidr": "10.0.0.0/16",
@@ -109,22 +133,20 @@ cat > cdk.context.json << EOF
   "databases": {
     "policy": {
       "cluster": {
-        "identifier": "$APP_NAME-policy",
         "name": "policydb1"
       },
       "schema": "policyschema",
       "tables": {
-        "policies": "${APP_NAME}_policies",
-        "premiums": "${APP_NAME}_premiums",
-        "addresses": "${APP_NAME}_addresses",
-        "beneficiaries": "${APP_NAME}_beneficiaries",
-        "payment_history": "${APP_NAME}_payment_history",
-        "payment_methods": "${APP_NAME}_payment_methods"
+        "policies": "policies",
+        "premiums": "premiums",
+        "addresses": "addresses",
+        "beneficiaries": "beneficiaries",
+        "payment_history": "payment_history",
+        "payment_methods": "payment_methods"
       }
     },
     "knowledge": {
       "cluster": {
-        "identifier": "$APP_NAME-kb",
         "name": "kbdb1"
       },
       "schema": "bedrockintegration",
@@ -136,12 +158,7 @@ cat > cdk.context.json << EOF
       }
     }
   },
-  "dynamodb": {
-    "feedback_table_name": "$APP_NAME-feedback",
-    "chat_history_table_name": "$APP_NAME-chat-history"
-  },
   "s3": {
-    "bucketName": "$APP_NAME-{account}-{region}",
     "folders": {
       "agent": "agent",
       "docs": "documents",
@@ -158,9 +175,6 @@ cat > cdk.context.json << EOF
   "cloudfront": {
     "custom_header_name": "X-Custom-Header",
     "custom_header_value": "$(openssl rand -hex 16)"
-  },
-  "ecr": {
-    "repository_name": "$APP_NAME-streamlit"
   },
   "github": {
     "owner": "$GITHUB_OWNER",
@@ -183,15 +197,10 @@ echo ""
 echo "🚀 Next steps:"
 echo "   1. Run: cdk bootstrap"
 echo "   2. Run: npm run build"
-echo "   3. Run: cdk deploy --all --force --require-approval never"
+echo "   3. Run: cdk destroy --all --force --require-approval never --ci --context-from-config cdk.context.json --profile <YOUR_AWS_CLI_PROFILE>"
 echo ""
 echo "📋 Your configuration:"
 echo "   App Name: $APP_NAME"
 echo "   AWS Account: $ACCOUNT_ID"
 echo "   AWS Region: $REGION"
 echo "   GitHub: $GITHUB_OWNER/$GITHUB_REPO ($GITHUB_BRANCH)"
-EOF
-
-chmod +x configure-context.sh
-
-echo "Shell script created successfully at configure-context.sh"
