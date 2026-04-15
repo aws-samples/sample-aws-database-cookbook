@@ -63,6 +63,10 @@ Aurora DSQL is a new database option under Amazon Aurora that provides virtually
 - **Pay-per-Use**: Only pay for what you use with no minimum charges
 - **Quick Provisioning**: Create databases with a few clicks in the console
 
+Getting started with Amazon Aurora DSQL is easy. You don't need an AWS account or any configurations to start exploring with Amazon Aurora DSQL. Simply start with [Amazon Aurora DSQL playground](https://playground.dsql.demo.aws/) to try Aurora DSQL interactively in your browser without needing an AWS account.
+
+![Amazon Aurora DSQL playground](../images/5.3-dsql_playground.gif)
+
 ### **[Migrating to Aurora DSQL](./5.3.3_Migrating-to-Aurora-DSQL.ipynb)**
 
 Transition from traditional PostgreSQL databases to Aurora DSQL's serverless distributed architecture:
